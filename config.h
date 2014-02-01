@@ -31,7 +31,7 @@
     //#define BI
     //#define TRI
     //#define QUADP
-    //#define QUADX
+    #define QUADX
     //#define Y4
     //#define Y6
     //#define HEX6
@@ -55,11 +55,13 @@
     //#define MINTHROTTLE 1120 // for Super Simple ESCs 10A
     //#define MINTHROTTLE 1064 // special ESC (simonk)
     //#define MINTHROTTLE 1050 // for brushed ESCs like ladybird
-    #define MINTHROTTLE 1150 // (*)
+    
+    // HeavyDuty is using 30A AfroESCs with SimonK firmware. They have been calibrated to the followingsettings.
+    #define MINTHROTTLE 1064 // (*)
 
   /****************************    Motor maxthrottle    *******************************/
     /* this is the maximum value for the ESCs at full power, this value can be increased up to 2000 */
-    #define MAXTHROTTLE 1850
+    #define MAXTHROTTLE 2000
 
   /****************************    Mincommand          *******************************/
     /* this is the value for the ESCs when they are not armed
@@ -132,7 +134,7 @@
       //#define Bobs_9DOF_V1     // BobsQuads 9DOF V1 with ITG3200, BMA180 & HMC5883L
       //#define Bobs_10DOF_BMP_V1 // BobsQuads 10DOF V1 with ITG3200, BMA180, HMC5883L & BMP180 - BMP180 is software compatible with BMP085
       //#define FLYDUINO_MPU
-      //#define CRIUS_AIO_PRO_V1
+      #define CRIUS_AIO_PRO_V1
       //#define DESQUARED6DOFV2GO  // DEsquared V2 with ITG3200 only
       //#define DESQUARED6DOFV4    // DEsquared V4 with MPU6050
       //#define LADYBIRD
@@ -184,15 +186,28 @@
       //#define ADCACC
 
       /* enforce your individual sensor orientation - even overrides board specific defaults */
-      //#define FORCE_ACC_ORIENTATION(X, Y, Z)  {accADC[ROLL]  =  Y; accADC[PITCH]  = -X; accADC[YAW]  = Z;}
-      //#define FORCE_GYRO_ORIENTATION(X, Y, Z) {gyroADC[ROLL] = -Y; gyroADC[PITCH] =  X; gyroADC[YAW] = Z;}
-      //#define FORCE_MAG_ORIENTATION(X, Y, Z)  {magADC[ROLL]  =  X; magADC[PITCH]  =  Y; magADC[YAW]  = Z;}
+
+      // HeavyDuty has its CriusAIO (actually a hobbyking clone) mounted upside down in the inner cage of the frame.
+      // the following configures reverse this upside-down mounting in software
+
+      // For Reference: CRIUS DEFAULTS
+      //#define ACC_ORIENTATION(X, Y, Z)  {accADC[ROLL]  = -X; accADC[PITCH]  = -Y; accADC[YAW]  =  Z;} 
+      //#define GYRO_ORIENTATION(X, Y, Z) {gyroADC[ROLL] =  Y; gyroADC[PITCH] = -X; gyroADC[YAW] = -Z;} 
+      //#define MAG_ORIENTATION(X, Y, Z)  {magADC[ROLL]  =  X; magADC[PITCH]  =  Y; magADC[YAW]  = -Z;} 
+
+      // CRIUS REVERSE MOUNT
+      #define FORCE_ACC_ORIENTATION(X, Y, Z)  {accADC[ROLL]  =  X; accADC[PITCH]  = -Y; accADC[YAW]  =  Z;}
+      #define FORCE_GYRO_ORIENTATION(X, Y, Z) {gyroADC[ROLL] =  Y; gyroADC[PITCH] =  X; gyroADC[YAW] =  Z;} 
+      #define FORCE_MAG_ORIENTATION(X, Y, Z)  {magADC[ROLL]  =  X; magADC[PITCH]  = -Y; magADC[YAW]  = -Z;}
 
       /* Board orientation shift */
       /* If you have frame designed only for + mode and you cannot rotate FC phisycally for flying in X mode (or vice versa)
        * you can use one of of this options for virtual sensors rotation by 45 deegres, then set type of multicopter according to flight mode.
        * Check motors order and directions of motors rotation for matching with new front point!  Uncomment only one option! */
-      //#define SENSORS_TILT_45DEG_RIGHT        // rotate the FRONT 45 degres clockwise
+      
+      // In the inner cage there's only room for mounting the Flightcontroller 45° rotated. I want to fly in X-configuration,
+      // so we'll rotate sensor input in software
+      #define SENSORS_TILT_45DEG_RIGHT        // rotate the FRONT 45 degres clockwise
       //#define SENSORS_TILT_45DEG_LEFT         // rotate the FRONT 45 degres counterclockwise
 
 
@@ -218,7 +233,10 @@
    /********************************    ARM/DISARM    *********************************/
    /* optionally disable stick combinations to arm/disarm the motors.
      * In most cases one of the two options to arm/disarm via TX stick is sufficient */
-    #define ALLOW_ARM_DISARM_VIA_TX_YAW
+    
+    // I'm using an AUX-Switch on my remote to arm/disarm.
+
+    //#define ALLOW_ARM_DISARM_VIA_TX_YAW
     //#define ALLOW_ARM_DISARM_VIA_TX_ROLL
 
   /***********************          Cam Stabilisation             ***********************/
@@ -465,14 +483,19 @@
   /* you may need to change PINx and PORTx plus #shift according to the desired pin! */
   //#define OVERRIDE_V_BATPIN                   A0 // instead of A3    // Analog PIN 3
 
-  //#define OVERRIDE_LEDPIN_PINMODE             pinMode (A1, OUTPUT); // use A1 instead of d13
-  //#define OVERRIDE_LEDPIN_TOGGLE              PINC |= 1<<1; // PINB |= 1<<5;     //switch LEDPIN state (digital PIN 13)
-  //#define OVERRIDE_LEDPIN_OFF                 PORTC &= ~(1<<1); // PORTB &= ~(1<<5);
-  //#define OVERRIDE_LEDPIN_ON                  PORTC |= 1<<1;    // was PORTB |= (1<<5);
+  // because the FlightControl is completely hidden inside the Frame-Cage, the LEDs are not visible on the outside.
+  // So I made a Breakout-Board containing a LED for ESC-Power, a LED for LEDPIN, a LED for the Buzzer and the Buzzer itself
+  // The breakout-Board is connected to Pins 45 and 46, so we extend the AIO-Definition of LEDPIN and BUZZERPIN to also switch
+  // on the devices on our breakout board
 
-  //#define OVERRIDE_BUZZERPIN_PINMODE          pinMode (A2, OUTPUT); // use A2 instead of d8
-  //#define OVERRIDE_BUZZERPIN_ON               PORTC |= 1<<2 //PORTB |= 1;
-  //#define OVERRIDE_BUZZERPIN_OFF              PORTC &= ~(1<<2); //PORTB &= ~1;
+  #define OVERRIDE_LEDPIN_PINMODE             pinMode(13, OUTPUT); pinMode(30, OUTPUT); pinMode(46, OUTPUT);
+  #define OVERRIDE_LEDPIN_TOGGLE              PINB  |= (1<<7); PINC  |= (1<<7); PINL  |= (1<<3);
+  #define OVERRIDE_LEDPIN_OFF                 digitalWrite(13, LOW);  digitalWrite(30, LOW);  digitalWrite(46, LOW);
+  #define OVERRIDE_LEDPIN_ON                  digitalWrite(13, HIGH); digitalWrite(30, HIGH); digitalWrite(46, HIGH);
+
+  #define OVERRIDE_BUZZERPIN_PINMODE          pinMode(45, OUTPUT);
+  #define OVERRIDE_BUZZERPIN_ON               digitalWrite(45, HIGH);
+  #define OVERRIDE_BUZZERPIN_OFF              digitalWrite(45, LOW);
 
 /*************************************************************************************************/
 /*****************                                                                 ***************/
@@ -570,7 +593,7 @@
        PITCH, ROLL and YAW is centered and THROTTLE is set to FAILSAFE_THR0TTLE value. You must set this value to descending about 1m/s or so 
        for best results. This value is depended from your configuration, AUW and some other params.  Next, afrer FAILSAFE_OFF_DELAY the copter is disarmed, 
        and motors is stopped. If RC pulse coming back before reached FAILSAFE_OFF_DELAY time, after the small quard time the RC control is returned to normal. */
-    //#define FAILSAFE                                // uncomment  to activate the failsafe function
+    #define FAILSAFE                                // uncomment  to activate the failsafe function
     #define FAILSAFE_DELAY     10                     // Guard time for failsafe activation after signal lost. 1 step = 0.1sec - 1sec in example
     #define FAILSAFE_OFF_DELAY 200                    // Time for Landing before motors stop in 0.1sec. 1 step = 0.1sec - 20sec in example
     #define FAILSAFE_THROTTLE  (MINTHROTTLE + 200)    // (*) Throttle level used for landing - may be relative to MINTHROTTLE - as in this case
@@ -610,7 +633,9 @@
 
   /*************************    INFLIGHT ACC Calibration    *****************************/
     /* This will activate the ACC-Inflight calibration if unchecked */
-    //#define INFLIGHT_ACC_CALIBRATION
+    
+    // InFlight ACC-Calibration is a nice thing when your Rotors are not that perfect or your copter is not that balanced
+    #define INFLIGHT_ACC_CALIBRATION
 
   /**************************    Disable WMP power pin     *******************************/
     /* disable use of the POWER PIN
@@ -804,8 +829,9 @@
   /********************************************************************/
   /****                             Buzzer                         ****/
   /********************************************************************/
-    //#define BUZZER
-    //#define RCOPTIONSBEEP         // uncomment this if you want the buzzer to beep at any rcOptions change on channel Aux1 to Aux4
+    // now that we have a Buzzer (on that breakout board), activate it
+    #define BUZZER
+    #define RCOPTIONSBEEP         // uncomment this if you want the buzzer to beep at any rcOptions change on channel Aux1 to Aux4
     //#define ARMEDTIMEWARNING 330  // (*) Trigger an alarm after a certain time of being armed [s] to save you lipo (if your TX does not have a countdown)
     //#define PILOTLAMP             //Uncomment if you are using a X-Arcraft Pilot Lamp
 
