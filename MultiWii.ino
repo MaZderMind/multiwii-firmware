@@ -105,6 +105,9 @@ enum box {
   #ifdef OSD_SWITCH
     BOXOSD,
   #endif
+  #ifdef FAILSAFE_TEST
+    BOXFAILSAFETEST,
+  #endif
   CHECKBOXITEMS
 };
 
@@ -157,6 +160,9 @@ const char boxnames[] PROGMEM = // names for dynamic generation of config GUI
   #ifdef OSD_SWITCH
     "OSD SW;"
   #endif
+  #ifdef FAILSAFE_TEST
+    "FAILSAFE TEST;"
+  #endif
 ;
 
 const uint8_t boxids[] PROGMEM = {// permanent IDs associated to boxes. This way, you can rely on an ID number to identify a BOX function.
@@ -207,6 +213,9 @@ const uint8_t boxids[] PROGMEM = {// permanent IDs associated to boxes. This way
   #endif
   #ifdef OSD_SWITCH
     19, //"OSD_SWITCH;"
+  #endif
+  #ifdef FAILSAFE_TEST
+    20, //"FAILSAFE_TEST;"
   #endif
 };
 
@@ -892,6 +901,14 @@ void loop () {
     computeRC();
     // Failsafe routine - added by MIS
     #if defined(FAILSAFE)
+      
+      #if defined(FAILSAFE_TEST)
+        // with good RX connectivity, failsafeCnt is resetted by computeRC on every call
+        // to test failsafe with a switch, we force failsafeCnt to be above the threshold here
+        if(rcOptions[BOXFAILSAFETEST])
+          failsafeCnt = (5*FAILSAFE_DELAY)+1;
+      #endif
+
       if ( failsafeCnt > (5*FAILSAFE_DELAY) && f.ARMED) {                  // Stabilize, and set Throttle to specified level
         for(i=0; i<3; i++) rcData[i] = MIDRC;                               // after specified guard time after RC signal is lost (in 0.1sec)
         rcData[THROTTLE] = conf.failsafe_throttle;

@@ -325,6 +325,9 @@ void evaluateCommand() {
                  #if defined(OSD_SWITCH)
                    rcOptions[BOXOSD]<<BOXOSD |
                  #endif
+                 #if defined(FAILSAFE_TEST)
+                   rcOptions[BOXFAILSAFETEST]<<BOXFAILSAFETEST |
+                 #endif
                  f.ARMED<<BOXARM);
        serialize8(global_conf.currentSet);   // current setting
      break;
