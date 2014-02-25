@@ -1229,6 +1229,14 @@ void loop () {
   }
  
   computeIMU();
+
+  if(0 == magADC[ROLL] == magADC[PITCH] == magADC[YAW])
+  {
+    // if mag reads completely zero and we're still on ground - warn the owner of a bad mag functionality
+    // as soon as we're up in the air, the warning does not help that much and could be in the way of other things that might be more important
+    if(!f.ARMED) alarmArray[0]=4; // give a steady alarm
+  }
+
   // Measure loop rate just afer reading the sensors
   currentTime = micros();
   cycleTime = currentTime - previousTime;
